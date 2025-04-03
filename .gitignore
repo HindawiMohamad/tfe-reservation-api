@@ -17,3 +17,7 @@ logs
 # Build
 dist/
 build/
+
+# Données de dev
+artisans.json
+importArtisans.js
