@@ -19,6 +19,15 @@ app.use('/api/reservations', reservationRoutes);
 const avisRoutes = require('./routes/avisRoutes');
 app.use('/api/avis', avisRoutes);
 
+const disponibiliteRoutes = require('./routes/disponibiliteRoutes');
+app.use('/api/disponibilites', disponibiliteRoutes);
+
+const uploadPhotoRoute = require('./routes/uploadPhotoRoute');
+app.use('/api/artisans', uploadPhotoRoute);
+
+const path = require('path');
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 
 // Connexion MongoDB

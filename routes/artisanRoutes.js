@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Artisan = require('../models/Artisan'); // on importe le model
 const bcrypt = require('bcrypt'); // pour hash le mot de passe
+const Avis = require("../models/Avis"); 
 
 // -------- Créer un compte artisan --------
 router.post('/register', async (req, res) => {
@@ -55,14 +56,30 @@ router.post('/login', async (req, res) => {
 });
 
 // -------- Obtenir tous les artisans (ex : pour la recherche) --------
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
   try {
-    const artisans = await Artisan.find(); // on prend tout
-    res.status(200).json(artisans);
+    const artisans = await Artisan.find();
+
+    const artisansAvecNotes = await Promise.all(
+      artisans.map(async (artisan) => {
+        const avis = await Avis.find({ artisan_id: artisan._id });
+        const total = avis.reduce((sum, a) => sum + a.note, 0);
+        const moyenne = avis.length ? total / avis.length : null;
+
+        return {
+          ...artisan.toObject(),
+          note_moyenne: moyenne
+        };
+      })
+    );
+
+    res.json(artisansAvecNotes);
   } catch (err) {
-    res.status(500).json({ msg: "Erreur serveur", err });
+    console.error("Erreur :", err);
+    res.status(500).json({ msg: "Erreur serveur" });
   }
 });
+
 
 // -------- Obtenir un artisan par son ID --------
 router.get('/:id', async (req, res) => {
