@@ -28,6 +28,10 @@ app.use('/api/artisans', uploadPhotoRoute);
 const path = require('path');
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+const testMailRoute = require("./routes/testMailRoute");
+app.use("/api/test-mail", testMailRoute);
+
+
 
 
 // Connexion MongoDB
