@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const ReservationSchema = new mongoose.Schema({
   nom_client: { type: String, required: true },
   email_client: { type: String, required: true }, 
+  telephone_client: { type: String },
   message: { type: String },
   date_rdv: { type: Date, required: true }, 
   artisan_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Artisan', required: true }, 

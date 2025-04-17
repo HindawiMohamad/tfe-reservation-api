@@ -3,6 +3,40 @@ const router = express.Router();
 const Artisan = require('../models/Artisan'); // on importe le model
 const bcrypt = require('bcrypt'); // pour hash le mot de passe
 const Avis = require("../models/Avis"); 
+const jwt = require("jsonwebtoken"); // en haut du fichier
+const auth = require("../middlewares/auth"); // middleware d'authentification
+const fs = require("fs");
+const path = require("path");
+
+router.delete("/:id/photo", auth, async (req, res) => {
+  const { photo } = req.body;
+
+  try {
+    // 🔒 Vérifie que l'artisan connecté correspond à l'id de la route
+    if (req.artisanId !== req.params.id) {
+      return res.status(403).json({ msg: "Action non autorisée" });
+    }
+
+    const artisan = await Artisan.findById(req.params.id);
+    if (!artisan) return res.status(404).json({ msg: "Artisan introuvable" });
+
+    artisan.photos = artisan.photos.filter(p => p !== photo);
+    await artisan.save();
+
+    const filePath = path.join(__dirname, "..", photo);
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+
+    res.status(200).json({ msg: "Photo supprimée ✅" });
+  } catch (err) {
+    console.error("Erreur suppression photo :", err);
+    res.status(500).json({ msg: "Erreur serveur", err });
+  }
+});
+
+
+
 
 // -------- Créer un compte artisan --------
 router.post('/register', async (req, res) => {
@@ -36,24 +70,33 @@ router.post('/register', async (req, res) => {
 });
 
 // -------- Connexion artisan --------
+
 router.post('/login', async (req, res) => {
   try {
     const { email, mot_de_passe } = req.body;
 
-    // on cherche si l’artisan existe
     const artisan = await Artisan.findOne({ email });
-    if (!artisan) return res.status(404).json({ msg: "Artisan introuvable" });
+    if (!artisan) {
+      return res.status(404).json({ msg: "Artisan introuvable" });
+    }
 
-    // on compare les mdp
     const isMatch = await bcrypt.compare(mot_de_passe, artisan.mot_de_passe);
-    if (!isMatch) return res.status(401).json({ msg: "Mot de passe incorrect" });
+    if (!isMatch) {
+      return res.status(401).json({ msg: "Mot de passe incorrect" });
+    }
 
-    res.status(200).json({ msg: "Connexion ok", artisan });
+    // ✅ Crée le token
+    const token = jwt.sign({ id: artisan._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    // ✅ Envoie la réponse une seule fois
+    res.status(200).json({ msg: "Connexion ok", token, artisan });
 
   } catch (err) {
+    console.error("Erreur serveur :", err);
     res.status(500).json({ msg: "Erreur serveur", err });
   }
 });
+
 
 // -------- Obtenir tous les artisans (ex : pour la recherche) --------
 router.get("/", async (req, res) => {

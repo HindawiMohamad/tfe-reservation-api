@@ -6,10 +6,10 @@ const sendEmail = require("../utils/sendEmail"); // N'oublie pas cette ligne tou
 // -------- Créer une réservation --------
 router.post('/', async (req, res) => {
   try {
-    const { nom_client, email_client, message, date_rdv, artisan_id } = req.body;
+    const { nom_client, email_client, telephone_client, message, date_rdv, artisan_id } = req.body;
 
     // ptite vérif basique
-    if (!nom_client || !email_client || !date_rdv || !artisan_id) {
+    if (!nom_client || !email_client || !telephone_client || !date_rdv || !artisan_id) {
       return res.status(400).json({ msg: "Donnée manquante" });
     }
 
@@ -17,6 +17,7 @@ router.post('/', async (req, res) => {
     const newResa = new Reservation({
       nom_client,
       email_client,
+      telephone_client,
       message,
       date_rdv,
       artisan_id
@@ -87,6 +88,41 @@ router.get('/:id', async (req, res) => {
     res.status(200).json(resa);
   } catch (err) {
     res.status(500).json({ msg: "Erreur serveur", err });
+  }
+});
+
+// -------- Voir les réservations d’un artisan à une date précise --------
+router.get('/artisan/:id/date/:date', async (req, res) => {
+  try {
+    const { id, date } = req.params;
+
+    // Créer une plage de date entre début et fin de la journée
+    const debut = new Date(`${date}T00:00:00.000Z`);
+    const fin = new Date(`${date}T23:59:59.999Z`);
+
+    const reservations = await Reservation.find({
+      artisan_id: id,
+      date_rdv: { $gte: debut, $lte: fin }
+    });
+
+    res.status(200).json(reservations);
+  } catch (err) {
+    console.error("Erreur filtre réservations :", err);
+    res.status(500).json({ msg: "Erreur serveur", err });
+  }
+});
+
+
+// -------- Supprimer une réservation --------
+router.delete('/:id', async (req, res) => {
+  try {
+    const deleted = await Reservation.findByIdAndDelete(req.params.id);
+    if (!deleted) return res.status(404).json({ msg: "Réservation introuvable" });
+
+    res.status(200).json({ msg: "Réservation supprimée ✅" });
+  } catch (err) {
+    console.error("Erreur suppression réservation :", err);
+    res.status(500).json({ msg: "Erreur serveur" });
   }
 });
 
